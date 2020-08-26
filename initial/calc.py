@@ -36,6 +36,7 @@ def t_error(t):
 
 # Build the lexer
 import lex as lex
+
 lexer = lex.lex()
 
 # Parsing rules
@@ -104,7 +105,9 @@ def p_error(p):
     else:
         print("Syntax error at EOF")
 
+
 import yacc as yacc
+
 parser = yacc.yacc()
 
 while True:

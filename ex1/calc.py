@@ -8,18 +8,58 @@
 import sys
 sys.path.insert(0, "../..")
 
-tokens = (
-    'NAME', 'NUMBER',
-)
+reserved = {
+    'sin': 'SIN',
+    'cos': 'COS',
+    'tg': 'TAN',
+    'ctg': 'COT',
+    'sqrt': 'SQRT',
+    'log': 'LOG',
+    'exp': 'EXP',
+    'asin': 'ASIN',
+    'acos': 'ACOS',
+    'atg': 'ATAN',
+    'actg': 'ACOT'
+}
 
-literals = ['=', '+', '-', '*', '/', '(', ')']
+tokens = [
+    'INTEGER',
+    'REAL',
+    'PLUS',
+    'MINUS',
+    'TIMES',
+    'DIVIDE',
+    'LPAREN',
+    'RPAREN',
+    'ID',
+    'ASSIGN',
+    'EQUALS',
+    'POWER'
+] + list(reserved.values())
+
+t_PLUS = r'\+'
+t_MINUS = r'\-'
+t_TIMES = r'\*'
+t_DIVIDE = r'\/'
+t_LPAREN = r'\('
+t_RPAREN = r'\)'
+t_ASSIGN = r'\='
+t_EQUALS = r'\=\='
+t_POWER = r'\^'
 
 # Tokens
 
-t_NAME = r'[a-zA-Z_][a-zA-Z0-9_]*'
+def t_ID(t):
+    r'[a-zA-Z_][a-zA-Z0-9_]*'
+    t.type = reserved.get(t.value, 'ID')
+    return t
 
+def t_REAL(t):
+    r'\d*\.\d+|\d+\.\d*'
+    t.value = float(t.value)
+    return t
 
-def t_NUMBER(t):
+def t_INTEGER(t):
     r'\d+'
     t.value = int(t.value)
     return t
@@ -35,83 +75,35 @@ def t_error(t):
     t.lexer.skip(1)
 
 # Build the lexer
-import lex as lex
-lexer = lex.lex()
+def build_lexer(data):
+    import lex as lex
+    lexer = lex.lex()
+    lexer.input(data)
+    return lexer
 
-# Parsing rules
+# Test it out
+data = '''
+   sin1 2^4 * sin^2 5 + 4.0^2.5 sin(23) .0 + 4 * 10.112121
+   + -20 *2
+ '''
 
-precedence = (
-    ('left', '+', '-'),
-    ('left', '*', '/'),
-    ('right', 'UMINUS'),
-)
-
-# dictionary of names
-names = {}
-
-def p_statement_assign(p):
-    'statement : NAME "=" expression'
-    names[p[1]] = p[3]
+# Give the lexer some input
+lexer = build_lexer(data)
 
 
-def p_statement_expr(p):
-    'statement : expression'
-    print(p[1])
+# Tokenize
+def tokenize(lexer):
+    lex_tokens = []
+    while True:
+        lex_token = lexer.token()
+        if not lex_token:
+            break
+        lex_tokens.append((lex_token.type, lex_token.value))
+    return lex_tokens
 
-
-def p_expression_binop(p):
-    '''expression : expression '+' expression
-                  | expression '-' expression
-                  | expression '*' expression
-                  | expression '/' expression'''
-    if p[2] == '+':
-        p[0] = p[1] + p[3]
-    elif p[2] == '-':
-        p[0] = p[1] - p[3]
-    elif p[2] == '*':
-        p[0] = p[1] * p[3]
-    elif p[2] == '/':
-        p[0] = p[1] / p[3]
-
-
-def p_expression_uminus(p):
-    "expression : '-' expression %prec UMINUS"
-    p[0] = -p[2]
-
-
-def p_expression_group(p):
-    "expression : '(' expression ')'"
-    p[0] = p[2]
-
-
-def p_expression_number(p):
-    "expression : NUMBER"
-    p[0] = p[1]
-
-
-def p_expression_name(p):
-    "expression : NAME"
-    try:
-        p[0] = names[p[1]]
-    except LookupError:
-        print("Undefined name '%s'" % p[1])
-        p[0] = 0
-
-
-def p_error(p):
-    if p:
-        print("Syntax error at '%s'" % p.value)
-    else:
-        print("Syntax error at EOF")
-
-import yacc as yacc
-parser = yacc.yacc()
 
 while True:
-    try:
-        s = input('calc > ')
-    except EOFError:
-        break
-    if not s:
-        continue
-    yacc.parse(s)
+    tok = lexer.token()
+    if not tok:
+        break  # No more input
+    print(tok)
