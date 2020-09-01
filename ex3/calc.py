@@ -467,26 +467,176 @@ def calculate_statements(statements):
     return results
 
 
-import yacc as yacc
-
-
 def calculator_output(data):
+    import yacc as yacc
     lexer = build_lexer(data)
     parser = yacc.yacc()
     statements = parser.parse(data)
     return calculate_statements(statements)
 
 
+class Order:
+    count = 0
 
-import yacc as yacc
+    @classmethod
+    def next(cls):
+        cls.count = cls.count + 1
+        return '[' + str(cls.count) + ']' + '\n'
 
-#data = 'a = sin (-143 + 12 ^ 2); a; a + 1; 1<2+1; if(1<2){2-1}'
-# data = '1'
-# #data = 'a = sin 0; -;1;a; if(1>2){2-1}else{69}; a=1; while(a < 10){a = a+1}; a; for(i = 0;i<5;i = i+1){i}'
+
+def create_node(data, parent):
+    from anytree import Node
+
+    def create_primitive_node(data, parent):
+        symbol, value = data
+        return Node(Order.next() + symbol + '\n' + str(value), parent)
+
+    def create_math_function_node(data, parent):
+        symbol, expr = data
+        math_function_node = Node(Order.next() + math_reserved.get(symbol), parent)
+        create_node(expr, math_function_node)
+        return math_function_node
+
+    def create_assignment_node(data, parent):
+        symbol, name, expression = data
+        assignment_node = Node(Order.next() + symbol, parent)
+        Node(Order.next() + 'ID' + '\n' + name, assignment_node)
+        create_node(expression, assignment_node)
+        return assignment_node
+
+    def create_variable_node(data, parent):
+        symbol, name = data
+        variable_node = Node(Order.next() + symbol + '\n' + name, parent)
+        return variable_node
+
+    def create_grouping_node(data, parent):
+        symbol, expr = data
+        grouping_node = Node(Order.next() + symbol + '\n' + '( )', parent)
+        create_node(expr, grouping_node)
+        return grouping_node
+
+    def create_binary_operation_node(data, parent):
+        symbol, expr1, expr2 = data
+        binary_operation_node = Node(Order.next() + symbol, parent)
+        create_node(expr1, binary_operation_node)
+        create_node(expr2, binary_operation_node)
+        return binary_operation_node
+
+    def create_unary_operation_node(data, parent):
+        symbol, expr = data
+        unary_operation_node = Node(Order.next() + 'NEGATION', parent)
+        create_node(expr, unary_operation_node)
+        return unary_operation_node
+
+    def create_if_node(data, parent):
+        symbol, condition, instructions = data
+        if_node = Node(Order.next() + symbol, parent)
+        condition_node = Node(Order.next() + 'CONDITION', if_node)
+        create_node(condition, condition_node)
+        instructions_node = Node(Order.next() + 'INSTRUCTIONS', if_node)
+        for i, instruction in enumerate(instructions, 1):
+            instruction_node = Node(Order.next() + 'INSTRUCTION_' + str(i), instructions_node)
+            create_node(instruction, instruction_node)
+        return if_node
+
+    def create_if_else_node(data, parent):
+        symbol, condition, if_instructions, else_instructions = data
+        if_else_node = Node(Order.next() + symbol, parent)
+        condition_node = Node(Order.next() + 'CONDITION', if_else_node)
+        create_node(condition, condition_node)
+        if_instructions_node = Node(Order.next() + 'IF_INSTRUCTIONS', if_else_node)
+        for i, instruction in enumerate(if_instructions, 1):
+            instruction_node = Node(Order.next() + 'INSTRUCTION_' + str(i), if_instructions_node)
+            create_node(instruction, instruction_node)
+        else_instructions_node = Node(Order.next() + 'ELSE_INSTRUCTIONS', if_else_node)
+        for i, instruction in enumerate(else_instructions, 1):
+            instruction_node = Node(Order.next() + 'INSTRUCTION_' + str(i), else_instructions_node)
+            create_node(instruction, instruction_node)
+        return if_else_node
+
+    def create_while_node(data, parent):
+        symbol, condition, instructions = data
+        while_node = Node(Order.next() + symbol, parent)
+        condition_node = Node(Order.next() + 'CONDITION', while_node)
+        create_node(condition, condition_node)
+        instructions_node = Node(Order.next() + 'INSTRUCTIONS', while_node)
+        for i, instruction in enumerate(instructions, 1):
+            instruction_node = Node(Order.next() + 'INSTRUCTION_' + str(i), instructions_node)
+            create_node(instruction, instruction_node)
+        return while_node
+
+    def create_for_node(data, parent):
+        symbol, assignment, condition, expr, instructions = data
+        for_node = Node(Order.next() + symbol, parent)
+        assignment_node = Node(Order.next() + 'ASSIGNMENT', for_node)
+        create_node(assignment[0], assignment_node)
+        condition_node = Node(Order.next() + 'CONDITION', for_node)
+        create_node(condition, condition_node)
+        expr_node = Node(Order.next() + 'EXPRESSIONS', for_node)
+        for i, e in enumerate(expr, 1):
+            exp = Node(Order.next() + 'EXPRESSION_' + str(i), expr_node)
+            create_node(e, exp)
+        instructions_node = Node(Order.next() + 'INSTRUCTIONS', for_node)
+        for i, instruction in enumerate(instructions, 1):
+            instr = Node(Order.next() + 'INSTRUCTION_' + str(i), instructions_node)
+            create_node(instruction, instr)
+
+    if data[0] in ('INTEGER', 'REAL', 'BOOL'):
+        return create_primitive_node(data, parent)
+    elif data[0] in list(math_reserved.keys()):
+        return create_math_function_node(data, parent)
+    elif data[0] == '=':
+        return create_assignment_node(data, parent)
+    elif data[0] == 'ID':
+        return create_variable_node(data, parent)
+    elif data[0] == 'GROUP':
+        return create_grouping_node(data, parent)
+    elif data[0] in ['+', '-', '*', '/', '^', '>', '>=', '<', "<=", "==", "!="]:
+        return create_binary_operation_node(data, parent)
+    elif data[0] in ['!', 'NEGATE']:
+        return create_unary_operation_node(data, parent)
+    elif data[0] == 'IF':
+        return create_if_node(data, parent)
+    elif data[0] == 'IFELSE':
+        return create_if_else_node(data, parent)
+    elif data[0] == 'WHILE':
+        return create_while_node(data, parent)
+    elif data[0] == 'FOR':
+        return create_for_node(data, parent)
+
+
+def build_ast(data):
+    import yacc as yacc
+    from anytree import Node
+    lexer = build_lexer(data)
+    parser = yacc.yacc()
+    statements = parser.parse(data)
+    program = Node("PROGRAM")
+    program.id = '1'
+    for i, statement in enumerate(statements, 1):
+        statement_node = Node("STATEMENT_" + str(i), program)
+        create_node(statement, statement_node)
+    return program
+
+
+def draw_ast(data, file):
+    from anytree.exporter import DotExporter
+    DotExporter(build_ast(data)).to_picture(file)
+
+# import yacc as yacc
+# data = 'a = sin (-143 + 12 ^ 2); a; a + 1; 1<2+1; if(1<2){2-1}'
+#data = '1'
+#data = 'a = sin 0;a; if(1>2){2-1}else{69}; a=1; while(a < 10){a = a+1}; a; for(i = 0;i<5;i = i+1){i}'
 # data = '!True'
-#
+# data = 'a = True; a; b = 1; while(b==1){a = False;b=2}; a; b; sin 1; 2 ^ 4; !True; -2'
+
 # lexer = build_lexer(data)
 # parser = yacc.yacc()
 # statements = parser.parse(data)
 # print(statements)
 # print(calculate_statements(statements))
+
+# program_node = build_ast(data)
+# for pre, fill, node in RenderTree(program_node):
+#     print("%s%s" % (pre, node.name))
+# DotExporter(program_node).to_picture("ast/ast.png")
