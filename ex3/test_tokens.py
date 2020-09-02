@@ -167,3 +167,21 @@ class TokenTests(unittest.TestCase):
         lexer = calc.build_lexer(data)
         tokens = calc.tokenize(lexer)
         self.assertEqual(tokens, [('ID', 'true'), ('ASSIGN', '='), ('BOOL', True)])
+
+    def test_string_1(self):
+        data = '"hello"'
+        lexer = calc.build_lexer(data)
+        tokens = calc.tokenize(lexer)
+        self.assertEqual(tokens, [('STRING', "hello")])
+
+    def test_string_2(self):
+        data = 'hello = "hello"'
+        lexer = calc.build_lexer(data)
+        tokens = calc.tokenize(lexer)
+        self.assertEqual(tokens, [('ID', 'hello'), ('ASSIGN', '='), ('STRING', "hello")])
+
+    def test_string_3(self):
+        data = '"1" 1'
+        lexer = calc.build_lexer(data)
+        tokens = calc.tokenize(lexer)
+        self.assertEqual(tokens, [('STRING', "1"), ('INTEGER', 1)])

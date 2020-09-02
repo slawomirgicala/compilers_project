@@ -25,7 +25,11 @@ reserved = {
     'if': 'IF',
     'else': 'ELSE',
     'while': 'WHILE',
-    'for': 'FOR'
+    'for': 'FOR',
+    'int': 'INT_INIT',
+    'real': 'REAL_INIT',
+    'bool': 'BOOL_INIT',
+    'str': 'STR_INIT'
 }
 
 tokens = [
@@ -50,7 +54,8 @@ tokens = [
     'BOOL',
     'SEMICOLON',
     'LBRACKET',
-    'RBRACKET'
+    'RBRACKET',
+    'STRING'
 ] + list(reserved.values())
 
 t_PLUS = r'\+'
@@ -94,6 +99,11 @@ def t_REAL(t):
 def t_INTEGER(t):
     r'\d+'
     t.value = int(t.value)
+    return t
+
+def t_STRING(t):
+    r'\".*\"'
+    t.value = t.value[1:-1]
     return t
 
 t_ignore = " \t"
@@ -154,6 +164,16 @@ def p_statement_assignment(p):
     p[0] = p[1]
 
 
+def p_statement_initialization(p):
+    'statement : initialization'
+    p[0] = p[1]
+
+
+def p_statement_init_assign(p):
+    'statement : init_assign'
+    p[0] = p[1]
+
+
 def p_statement_expr(p):
     'statement : expression'
     p[0] = [p[1]]
@@ -162,6 +182,22 @@ def p_statement_expr(p):
 def p_assignment(p):
     'assignment : ID ASSIGN expression'
     p[0] = [(p[2], p[1], p[3])]
+
+
+def p_initialize(p):
+    '''initialization : INT_INIT ID
+                      | REAL_INIT ID
+                      | STR_INIT ID
+                      | BOOL_INIT ID'''
+    p[0] = [(p[1], p[2])]
+
+
+def p_init_assign(p):
+    '''init_assign : INT_INIT ID ASSIGN expression
+                   | REAL_INIT ID ASSIGN expression
+                   | BOOL_INIT ID ASSIGN expression
+                   | STR_INIT ID ASSIGN expression'''
+    p[0] = [('INIT_ASSIGN', p[1], p[2], p[4])]
 
 
 def p_expression_binop_arithmetic(p):
@@ -233,6 +269,11 @@ def p_expression_bool(p):
     p[0] = ('BOOL', p[1])
 
 
+def p_expression_string(p):
+    'expression : STRING'
+    p[0] = ('STRING', p[1])
+
+
 def p_expression_id(p):
     "expression : ID"
     p[0] = ('ID', p[1])
@@ -252,6 +293,7 @@ def p_while_statement(p):
     "statement : WHILE LPAREN relation RPAREN LBRACKET statement RBRACKET"
     p[0] = [('WHILE', p[3], p[6])]
 
+
 def p_for_statement(p):
     "statement : FOR LPAREN assignment SEMICOLON relation SEMICOLON statement RPAREN LBRACKET statement RBRACKET"
     p[0] = [('FOR', p[3], p[5], p[7], p[10])]
@@ -264,20 +306,170 @@ def p_error(p):
         print("Syntax error at EOF")
 
 
+# calculator types
+
+
+class Integer:
+    def __init__(self, value):
+        self.value = value
+
+    def __add__(self, other):
+        return Integer(self.value + other.value)
+
+    def __sub__(self, other):
+        return Integer(self.value - other.value)
+
+    def __mul__(self, other):
+        return Integer(self.value * other.value)
+
+    def __truediv__(self, other):
+        return Integer(self.value // other.value)
+
+    def __pow__(self, other, modulo=None):
+        return Integer(self.value ** other.value)
+
+    def __eq__(self, other):
+        return Bool(self.value == other.value)
+
+    def __ne__(self, other):
+        return Bool(self.value != other.value)
+
+    def __lt__(self, other):
+        return Bool(self.value < other.value)
+
+    def __le__(self, other):
+        return Bool(self.value <= other.value)
+
+    def __gt__(self, other):
+        return Bool(self.value > other.value)
+
+    def __ge__(self, other):
+        return Bool(self.value >= other.value)
+
+    def __str__(self):
+        return str(self.value)
+
+
+class Real:
+    def __init__(self, value):
+        self.value = value
+
+    def __add__(self, other):
+        return Real(self.value + other.value)
+
+    def __sub__(self, other):
+        return Real(self.value - other.value)
+
+    def __mul__(self, other):
+        return Real(self.value * other.value)
+
+    def __truediv__(self, other):
+        return Real(self.value / other.value)
+
+    def __pow__(self, other, modulo=None):
+        return Real(self.value ** other.value)
+
+    def __eq__(self, other):
+        return Bool(self.value == other.value)
+
+    def __ne__(self, other):
+        return Bool(self.value != other.value)
+
+    def __lt__(self, other):
+        return Bool(self.value < other.value)
+
+    def __le__(self, other):
+        return Bool(self.value <= other.value)
+
+    def __gt__(self, other):
+        return Bool(self.value > other.value)
+
+    def __ge__(self, other):
+        return Bool(self.value >= other.value)
+
+    def __str__(self):
+        return str(self.value)
+
+
+class Bool:
+    def __init__(self, value):
+        self.value = value
+
+    def __eq__(self, other):
+        return Bool(self.value == other.value)
+
+    def __ne__(self, other):
+        return Bool(self.value != other.value)
+
+    def __str__(self):
+        return str(self.value)
+
+
+class String:
+    def __init__(self, value):
+        self.value = value
+
+    def __add__(self, other):
+        return String(self.value + other.value)
+
+    def __eq__(self, other):
+        return Bool(self.value == other.value)
+
+    def __ne__(self, other):
+        return Bool(self.value != other.value)
+
+    def __lt__(self, other):
+        return Bool(self.value < other.value)
+
+    def __le__(self, other):
+        return Bool(self.value <= other.value)
+
+    def __gt__(self, other):
+        return Bool(self.value > other.value)
+
+    def __ge__(self, other):
+        return Bool(self.value >= other.value)
+
+    def __str__(self):
+        return str(self.value)
+
+
+# calculations utilities
+
+
 def calculate(data):
     def get_value(data):
-        _, value = data
-        return value
+        type_name, value = data
+        if type_name == 'INTEGER':
+            return Integer(value)
+        elif type_name == 'REAL':
+            return Real(value)
+        elif type_name == 'STRING':
+            return String(value)
+        elif type_name == 'BOOL':
+            return Bool(value)
 
     def perform_assignment(data):
-        _, name, value = data
-        value = calculate(value)
-        names[name] = value
-        return None
+        _, name, expr = data
+        value = calculate(expr)
+        if name in names:
+            if type(names[name]) is type(value):
+                names[name] = value
+                return None
+            else:
+                return "Wrong type assignment to variable " + name
+        else:
+            return "Variable not initialized"
 
     def get_assigned_value(data):
         _, name = data
-        return names[name]
+        if name in names:
+            if names[name].value is None:
+                return "No value assigned to variable"
+            else:
+                return names[name]
+        else:
+            return "Variable " + name + " not initialized"
 
     def skip_grouping(data):
         _, expression = data
@@ -286,114 +478,188 @@ def calculate(data):
     def inverse(data):
         _, value = data
         value = calculate(value)
-        return -value
+        if isinstance(value, Integer) or isinstance(value, Real):
+            value.value = -value.value
+            return value
+        else:
+            return "Cannot use minus on that type"
 
     def negate(data):
         _, value = data
         value = calculate(value)
-        return not value
+        if isinstance(value, Bool):
+            value.value = not value.value
+            return value
+        else:
+            return "Only bool can be negated"
 
     def addition(data):
         _, left, right = data
         left = calculate(left)
         right = calculate(right)
-        return left + right
+        if type(left) is type(right):
+            if isinstance(left, Bool):
+                return "Cannot add bool"
+            else:
+                return left + right
+        else:
+            return "Incompatible types"
 
     def subtraction(data):
         _, left, right = data
         left = calculate(left)
         right = calculate(right)
-        return left - right
+        if type(left) is type(right):
+            if isinstance(left, Bool) or isinstance(left, String):
+                return "Cannot subtract bool and string"
+            else:
+                return left - right
+        else:
+            return "Incompatible types"
 
     def multiplication(data):
         _, left, right = data
         left = calculate(left)
         right = calculate(right)
-        return left * right
+        if type(left) is type(right):
+            if isinstance(left, Bool) or isinstance(left, String):
+                return "Cannot multiply bool and string"
+            else:
+                return left * right
+        else:
+            return "Incompatible types"
 
     def division(data):
         _, left, right = data
         left = calculate(left)
         right = calculate(right)
-        return left / right
+        if type(left) is type(right):
+            if isinstance(left, Bool) or isinstance(left, String):
+                return "Cannot divide bool and string"
+            else:
+                return left / right
+        else:
+            return "Incompatible types"
 
     def exponentiation(data):
         _, left, right = data
         left = calculate(left)
         right = calculate(right)
-        return left ** right
+        if type(left) is type(right):
+            if isinstance(left, Bool) or isinstance(left, String):
+                return "Cannot power bool and string"
+            else:
+                return left ** right
+        else:
+            return "Incompatible types"
 
     def equality(data):
         _, left, right = data
         left = calculate(left)
         right = calculate(right)
-        return left == right
+        if type(left) is type(right):
+            return left == right
+        else:
+            return "Incompatible types"
 
     def not_equality(data):
         _, left, right = data
         left = calculate(left)
         right = calculate(right)
-        return left != right
+        if type(left) is type(right):
+            return left != right
+        else:
+            return "Incompatible types"
 
     def greater(data):
         _, left, right = data
         left = calculate(left)
         right = calculate(right)
-        return left > right
+        if type(left) is type(right):
+            if isinstance(left, Bool):
+                return "Bool values have no order"
+            else:
+                return left > right
+        else:
+            return "Incompatible types"
 
     def greater_or_equal(data):
         _, left, right = data
         left = calculate(left)
         right = calculate(right)
-        return left >= right
+        if type(left) is type(right):
+            if isinstance(left, Bool):
+                return "Bool values have no order"
+            else:
+                return left >= right
+        else:
+            return "Incompatible types"
 
     def less(data):
         _, left, right = data
         left = calculate(left)
         right = calculate(right)
-        return left < right
+        if type(left) is type(right):
+            if isinstance(left, Bool):
+                return "Bool values have no order"
+            else:
+                return left < right
+        else:
+            return "Incompatible types"
 
     def less_or_equal(data):
         _, left, right = data
         left = calculate(left)
         right = calculate(right)
-        return left <= right
+        if type(left) is type(right):
+            if isinstance(left, Bool):
+                return "Bool values have no order"
+            else:
+                return left <= right
+        else:
+            return "Incompatible types"
 
     def math_function(data):
         f_name, arg = data
         arg = calculate(arg)
+        if isinstance(arg, String) and isinstance(arg, Bool):
+            return "Cannot use math functions on strings and bools"
         if f_name == 'sin':
-            return math.sin(arg)
+            return Real(math.sin(arg.value))
         elif f_name == 'cos':
-            return math.cos(arg)
+            return Real(math.cos(arg.value))
         elif f_name == 'tg':
-            return math.tan(arg)
+            return Real(math.tan(arg.value))
         elif f_name == 'ctg':
-            return 1/math.tan(arg)
+            return Real(1/math.tan(arg.value))
         elif f_name == 'sqrt':
-            return math.sqrt(arg)
+            return Real(math.sqrt(arg.value))
         elif f_name == 'exp':
-            return math.exp(arg)
+            return Real(math.exp(arg.value))
         elif f_name == 'log':
-            return math.log(arg)
+            return Real(math.log(arg.value))
         elif f_name == 'asin':
-            return math.asin(arg)
+            return Real(math.asin(arg.value))
         elif f_name == 'atg':
-            return math.atan(arg)
+            return Real(math.atan(arg.value))
         elif f_name == 'acos':
-            return math.acos(arg)
+            return Real(math.acos(arg.value))
 
     def if_statement(data):
         _, condition, if_instructions = data
         condition = calculate(condition)
-        if condition:
+        if not isinstance(condition, Bool):
+            return "Not bool in if statement"
+        if condition.value:
             return calculate_statements(if_instructions)
         return None
 
     def if_else_statement(data):
         _, condition, if_instructions, else_instructions = data
         condition = calculate(condition)
-        if condition:
+        if not isinstance(condition, Bool):
+            return "Not bool in if statement"
+        if condition.value:
             return calculate_statements(if_instructions)
         else:
             return calculate_statements(else_instructions)
@@ -401,20 +667,65 @@ def calculate(data):
     def while_statement(data):
         _, condition, instructions = data
         results = []
-        while calculate(condition):
+        cond = calculate(condition)
+        if not isinstance(cond, Bool):
+            return "Not bool in while statement"
+        while cond.value:
             results.append(calculate_statements(instructions))
+            cond = calculate(condition)
+            if not isinstance(cond, Bool):
+                return "Not bool in while statement"
         return results
 
     def for_statement(data):
         _, assignment, condition, expression, instructions = data
         results = []
         calculate_statements(assignment)
-        while calculate(condition):
+        cond = calculate(condition)
+        if not isinstance(cond, Bool):
+            return "Not bool in for statement"
+        while cond.value:
             results.append(calculate_statements(instructions))
             calculate_statements(expression)
+            cond = calculate(condition)
+            if not isinstance(cond, Bool):
+                return "Not bool in for statement"
         return results
 
-    if data[0] in ('INTEGER', 'REAL', 'BOOL'):
+    def initialization(data):
+        var_type, name = data
+        if name in names:
+            return "Already initialized"
+        else:
+            if var_type == 'int':
+                names[name] = Integer(None)
+            elif var_type == 'real':
+                names[name] = Real(None)
+            elif var_type == 'bool':
+                names[name] = Bool(None)
+            elif var_type == 'str':
+                names[name] = String(None)
+            return None
+
+    def initialization_assignment(data):
+        _, var_type, name, expr = data
+        if name in names:
+            return "Variable already initialized"
+        if var_type == 'int':
+            var_type = Integer(None)
+        elif var_type == 'real':
+            var_type = Real(None)
+        elif var_type == 'bool':
+            var_type = Bool(None)
+        elif var_type == 'str':
+            var_type = String(None)
+        val = calculate(expr)
+        if type(var_type) is not type(val):
+            return "Incompatible types"
+        names[name] = val
+        return None
+
+    if data[0] in ('INTEGER', 'REAL', 'BOOL', 'STRING'):
         return get_value(data)
     elif data[0] in list(math_reserved.keys()):
         return math_function(data)
@@ -458,6 +769,10 @@ def calculate(data):
         return while_statement(data)
     elif data[0] == 'FOR':
         return for_statement(data)
+    elif data[0] in ['int', 'bool', 'real', 'str']:
+        return initialization(data)
+    elif data[0] == 'INIT_ASSIGN':
+        return initialization_assignment(data)
 
 
 def calculate_statements(statements):
@@ -503,6 +818,18 @@ def create_node(data, parent):
         Node(Order.next() + 'ID' + '\n' + name, assignment_node)
         create_node(expression, assignment_node)
         return assignment_node
+
+    def create_initialization_node(data, parent):
+        symbol, name = data
+        initialization_node = Node(Order.next() + symbol, parent)
+        Node(Order.next() + 'ID' + '\n' + name, initialization_node)
+        return initialization_node
+
+    def create_init_assign_node(data, parent):
+        init_assign, var_type, name, expression = data
+        init_assign_node = Node(Order.next() + 'INIT_AND_ASSIGN', parent)
+        create_initialization_node((var_type, name), init_assign_node)
+        create_node(expression, init_assign_node)
 
     def create_variable_node(data, parent):
         symbol, name = data
@@ -581,7 +908,7 @@ def create_node(data, parent):
             instr = Node(Order.next() + 'INSTRUCTION_' + str(i), instructions_node)
             create_node(instruction, instr)
 
-    if data[0] in ('INTEGER', 'REAL', 'BOOL'):
+    if data[0] in ('INTEGER', 'REAL', 'BOOL', 'STRING'):
         return create_primitive_node(data, parent)
     elif data[0] in list(math_reserved.keys()):
         return create_math_function_node(data, parent)
@@ -603,6 +930,10 @@ def create_node(data, parent):
         return create_while_node(data, parent)
     elif data[0] == 'FOR':
         return create_for_node(data, parent)
+    elif data[0] in ['INT_INIT', 'REAL_INIT', 'BOOL_INIT', 'STR_INIT']:
+        return create_initialization_node(data, parent)
+    elif data[0] == 'INIT_ASSIGN':
+        return create_init_assign_node(data, parent)
 
 
 def build_ast(data):
@@ -623,20 +954,33 @@ def draw_ast(data, file):
     from anytree.exporter import DotExporter
     DotExporter(build_ast(data)).to_picture(file)
 
-# import yacc as yacc
+#
 # data = 'a = sin (-143 + 12 ^ 2); a; a + 1; 1<2+1; if(1<2){2-1}'
 #data = '1'
-#data = 'a = sin 0;a; if(1>2){2-1}else{69}; a=1; while(a < 10){a = a+1}; a; for(i = 0;i<5;i = i+1){i}'
+#data = 'int i; real j = 0.0;str hi = "hi"; hi;int a = sin 0;a; if(1>2){2-1}else{69}; a=1; while(a < 10){a = a+1}; a; for(i = 0;i<5;i = i+1){i}'
 # data = '!True'
 # data = 'a = True; a; b = 1; while(b==1){a = False;b=2}; a; b; sin 1; 2 ^ 4; !True; -2'
 
-# lexer = build_lexer(data)
-# parser = yacc.yacc()
-# statements = parser.parse(data)
-# print(statements)
-# print(calculate_statements(statements))
 
-# program_node = build_ast(data)
-# for pre, fill, node in RenderTree(program_node):
-#     print("%s%s" % (pre, node.name))
-# DotExporter(program_node).to_picture("ast/ast.png")
+def printer(data):
+    for d in data:
+        if isinstance(d, list):
+            printer(d)
+        else:
+            if d is not None:
+                print(d)
+
+
+
+from anytree.exporter import DotExporter
+
+# DotExporter(build_ast(statements)).to_picture("ast/example.png")
+if __name__ == '__main__':
+    import yacc as yacc
+    data = 'int i; real j = 0.0;str hi = "hi"; hi;int a = sin 0;a;' \
+           ' if(1>2){2-1}else{69}; a=1; while(a < 10){a = a+1}; a; for(i = 0;i<5;i = i+1){i}'
+    lexer = build_lexer(data)
+    parser = yacc.yacc()
+    statements = parser.parse(data)
+    print(statements)
+    printer(calculate_statements(statements))
