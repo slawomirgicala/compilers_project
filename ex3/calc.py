@@ -29,7 +29,9 @@ reserved = {
     'int': 'INT_INIT',
     'real': 'REAL_INIT',
     'bool': 'BOOL_INIT',
-    'str': 'STR_INIT'
+    'str': 'STR_INIT',
+    'inttoreal': 'INTTOREAL',
+    'realtoint': 'REALTOINT'
 }
 
 tokens = [
@@ -272,6 +274,16 @@ def p_expression_bool(p):
 def p_expression_string(p):
     'expression : STRING'
     p[0] = ('STRING', p[1])
+
+
+def p_expression_inttoreal(p):
+    'expression : INTTOREAL LPAREN expression RPAREN'
+    p[0] = ('INTTOREAL', p[3])
+
+
+def p_expression_realtoint(p):
+    'expression : REALTOINT LPAREN expression RPAREN'
+    p[0] = ('REALTOINT', p[3])
 
 
 def p_expression_id(p):
@@ -725,6 +737,22 @@ def calculate(data):
         names[name] = val
         return None
 
+    def int_to_real_conversion(data):
+        _, expr = data
+        to_cast = calculate(expr)
+        if isinstance(to_cast, Integer):
+            return Real(float(to_cast.value))
+        else:
+            return "Only integer can be cast to real by inttoreal"
+
+    def real_to_int_conversion(data):
+        _, expr = data
+        to_cast = calculate(expr)
+        if isinstance(to_cast, Real):
+            return Integer(int(to_cast.value))
+        else:
+            return "Only real can be cast to int by realtoint"
+
     if data[0] in ('INTEGER', 'REAL', 'BOOL', 'STRING'):
         return get_value(data)
     elif data[0] in list(math_reserved.keys()):
@@ -773,6 +801,10 @@ def calculate(data):
         return initialization(data)
     elif data[0] == 'INIT_ASSIGN':
         return initialization_assignment(data)
+    elif data[0] == 'INTTOREAL':
+        return int_to_real_conversion(data)
+    elif data[0] == 'REALTOINT':
+        return real_to_int_conversion(data)
 
 
 def calculate_statements(statements):
@@ -908,6 +940,18 @@ def create_node(data, parent):
             instr = Node(Order.next() + 'INSTRUCTION_' + str(i), instructions_node)
             create_node(instruction, instr)
 
+    def create_int_to_real_node(data, parent):
+        symbol, expr = data
+        int_to_real_node = Node(Order.next() + 'INTTOREAL', parent)
+        create_node(expr, int_to_real_node)
+        return int_to_real_node
+
+    def create_real_to_int_node(data, parent):
+        symbol, expr = data
+        real_to_int_node = Node(Order.next() + 'REALTOINT', parent)
+        create_node(expr, real_to_int_node)
+        return real_to_int_node
+
     if data[0] in ('INTEGER', 'REAL', 'BOOL', 'STRING'):
         return create_primitive_node(data, parent)
     elif data[0] in list(math_reserved.keys()):
@@ -934,6 +978,10 @@ def create_node(data, parent):
         return create_initialization_node(data, parent)
     elif data[0] == 'INIT_ASSIGN':
         return create_init_assign_node(data, parent)
+    elif data[0] == 'INTTOREAL':
+        return create_int_to_real_node(data, parent)
+    elif data[0] == 'REALTOINT':
+        return create_real_to_int_node(data, parent)
 
 
 def build_ast(data):
