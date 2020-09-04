@@ -450,7 +450,7 @@ class String:
 # calculations utilities
 
 
-def calculate(data):
+def calculate(data, depth):
     def get_value(data):
         type_name, value = data
         if type_name == 'INTEGER':
@@ -464,33 +464,42 @@ def calculate(data):
 
     def perform_assignment(data):
         _, name, expr = data
-        value = calculate(expr)
+        value = calculate(expr, depth)
         if name in names:
-            if type(names[name]) is type(value):
-                names[name] = value
-                return None
+            if bool(names[name]):
+                deepest = max(names[name])
+                if type(names[name][deepest]) is type(value):
+                    names[name][deepest] = value
+                    return None
+                else:
+                    return "Wrong type assignment to variable " + name
             else:
-                return "Wrong type assignment to variable " + name
+                return "Variable not initialized"
         else:
             return "Variable not initialized"
 
     def get_assigned_value(data):
         _, name = data
         if name in names:
-            if names[name].value is None:
-                return "No value assigned to variable"
+            if bool(names[name]):
+                deepest = max(names[name])
+                val = names[name][deepest]
+                if val.value is None:
+                    return "No value assigned to variable"
+                else:
+                    return val
             else:
-                return names[name]
+                return "Variable not initialized"
         else:
-            return "Variable " + name + " not initialized"
+            return "Variable not initialized"
 
     def skip_grouping(data):
         _, expression = data
-        return calculate(expression)
+        return calculate(expression, depth)
 
     def inverse(data):
         _, value = data
-        value = calculate(value)
+        value = calculate(value, depth)
         if isinstance(value, Integer) or isinstance(value, Real):
             value.value = -value.value
             return value
@@ -499,7 +508,7 @@ def calculate(data):
 
     def negate(data):
         _, value = data
-        value = calculate(value)
+        value = calculate(value, depth)
         if isinstance(value, Bool):
             value.value = not value.value
             return value
@@ -508,8 +517,8 @@ def calculate(data):
 
     def addition(data):
         _, left, right = data
-        left = calculate(left)
-        right = calculate(right)
+        left = calculate(left, depth)
+        right = calculate(right, depth)
         if type(left) is type(right):
             if isinstance(left, Bool):
                 return "Cannot add bool"
@@ -520,8 +529,8 @@ def calculate(data):
 
     def subtraction(data):
         _, left, right = data
-        left = calculate(left)
-        right = calculate(right)
+        left = calculate(left, depth)
+        right = calculate(right, depth)
         if type(left) is type(right):
             if isinstance(left, Bool) or isinstance(left, String):
                 return "Cannot subtract bool and string"
@@ -532,8 +541,8 @@ def calculate(data):
 
     def multiplication(data):
         _, left, right = data
-        left = calculate(left)
-        right = calculate(right)
+        left = calculate(left, depth)
+        right = calculate(right, depth)
         if type(left) is type(right):
             if isinstance(left, Bool) or isinstance(left, String):
                 return "Cannot multiply bool and string"
@@ -544,8 +553,8 @@ def calculate(data):
 
     def division(data):
         _, left, right = data
-        left = calculate(left)
-        right = calculate(right)
+        left = calculate(left, depth)
+        right = calculate(right, depth)
         if type(left) is type(right):
             if isinstance(left, Bool) or isinstance(left, String):
                 return "Cannot divide bool and string"
@@ -556,8 +565,8 @@ def calculate(data):
 
     def exponentiation(data):
         _, left, right = data
-        left = calculate(left)
-        right = calculate(right)
+        left = calculate(left, depth)
+        right = calculate(right, depth)
         if type(left) is type(right):
             if isinstance(left, Bool) or isinstance(left, String):
                 return "Cannot power bool and string"
@@ -568,8 +577,8 @@ def calculate(data):
 
     def equality(data):
         _, left, right = data
-        left = calculate(left)
-        right = calculate(right)
+        left = calculate(left, depth)
+        right = calculate(right, depth)
         if type(left) is type(right):
             return left == right
         else:
@@ -577,8 +586,8 @@ def calculate(data):
 
     def not_equality(data):
         _, left, right = data
-        left = calculate(left)
-        right = calculate(right)
+        left = calculate(left, depth)
+        right = calculate(right, depth)
         if type(left) is type(right):
             return left != right
         else:
@@ -586,8 +595,8 @@ def calculate(data):
 
     def greater(data):
         _, left, right = data
-        left = calculate(left)
-        right = calculate(right)
+        left = calculate(left, depth)
+        right = calculate(right, depth)
         if type(left) is type(right):
             if isinstance(left, Bool):
                 return "Bool values have no order"
@@ -598,8 +607,8 @@ def calculate(data):
 
     def greater_or_equal(data):
         _, left, right = data
-        left = calculate(left)
-        right = calculate(right)
+        left = calculate(left, depth)
+        right = calculate(right, depth)
         if type(left) is type(right):
             if isinstance(left, Bool):
                 return "Bool values have no order"
@@ -610,8 +619,8 @@ def calculate(data):
 
     def less(data):
         _, left, right = data
-        left = calculate(left)
-        right = calculate(right)
+        left = calculate(left, depth)
+        right = calculate(right, depth)
         if type(left) is type(right):
             if isinstance(left, Bool):
                 return "Bool values have no order"
@@ -622,8 +631,8 @@ def calculate(data):
 
     def less_or_equal(data):
         _, left, right = data
-        left = calculate(left)
-        right = calculate(right)
+        left = calculate(left, depth)
+        right = calculate(right, depth)
         if type(left) is type(right):
             if isinstance(left, Bool):
                 return "Bool values have no order"
@@ -634,7 +643,7 @@ def calculate(data):
 
     def math_function(data):
         f_name, arg = data
-        arg = calculate(arg)
+        arg = calculate(arg, depth)
         if isinstance(arg, String) and isinstance(arg, Bool):
             return "Cannot use math functions on strings and bools"
         if f_name == 'sin':
@@ -660,32 +669,56 @@ def calculate(data):
 
     def if_statement(data):
         _, condition, if_instructions = data
-        condition = calculate(condition)
+        condition = calculate(condition, depth)
         if not isinstance(condition, Bool):
             return "Not bool in if statement"
         if condition.value:
-            return calculate_statements(if_instructions)
+            result = calculate_statements(if_instructions, depth+1)
+            for l in names.values():
+                try:
+                    del l[depth+1]
+                except KeyError:
+                    pass
+            return result
         return None
 
     def if_else_statement(data):
         _, condition, if_instructions, else_instructions = data
-        condition = calculate(condition)
+        condition = calculate(condition, depth)
         if not isinstance(condition, Bool):
             return "Not bool in if statement"
         if condition.value:
-            return calculate_statements(if_instructions)
+            result = calculate_statements(if_instructions, depth + 1)
+            for l in names.values():
+                try:
+                    del l[depth + 1]
+                except KeyError:
+                    pass
+            return result
         else:
-            return calculate_statements(else_instructions)
+            result = calculate_statements(else_instructions, depth + 1)
+            for l in names.values():
+                try:
+                    del l[depth + 1]
+                except KeyError:
+                    pass
+            return result
 
     def while_statement(data):
         _, condition, instructions = data
         results = []
-        cond = calculate(condition)
+        cond = calculate(condition, depth)
         if not isinstance(cond, Bool):
             return "Not bool in while statement"
         while cond.value:
-            results.append(calculate_statements(instructions))
-            cond = calculate(condition)
+            res = calculate_statements(instructions, depth + 1)
+            for l in names.values():
+                try:
+                    del l[depth + 1]
+                except KeyError:
+                    pass
+            results.append(res)
+            cond = calculate(condition, depth)
             if not isinstance(cond, Bool):
                 return "Not bool in while statement"
         return results
@@ -693,14 +726,20 @@ def calculate(data):
     def for_statement(data):
         _, assignment, condition, expression, instructions = data
         results = []
-        calculate_statements(assignment)
-        cond = calculate(condition)
+        calculate_statements(assignment, depth)
+        cond = calculate(condition, depth)
         if not isinstance(cond, Bool):
             return "Not bool in for statement"
         while cond.value:
-            results.append(calculate_statements(instructions))
-            calculate_statements(expression)
-            cond = calculate(condition)
+            res = calculate_statements(instructions, depth + 1)
+            for l in names.values():
+                try:
+                    del l[depth + 1]
+                except KeyError:
+                    pass
+            results.append(res)
+            calculate_statements(expression, depth)
+            cond = calculate(condition, depth)
             if not isinstance(cond, Bool):
                 return "Not bool in for statement"
         return results
@@ -708,22 +747,32 @@ def calculate(data):
     def initialization(data):
         var_type, name = data
         if name in names:
-            return "Already initialized"
+            if depth in names[name]:
+                return "Already initialized"
+            else:
+                if var_type == 'int':
+                    names[name][depth] = Integer(None)
+                elif var_type == 'real':
+                    names[name][depth] = Real(None)
+                elif var_type == 'bool':
+                    names[name][depth] = Bool(None)
+                elif var_type == 'str':
+                    names[name][depth] = String(None)
+                return None
         else:
             if var_type == 'int':
-                names[name] = Integer(None)
+                names[name] = {depth: Integer(None)}
             elif var_type == 'real':
-                names[name] = Real(None)
+                names[name] = {depth: Real(None)}
             elif var_type == 'bool':
-                names[name] = Bool(None)
+                names[name] = {depth: Bool(None)}
             elif var_type == 'str':
-                names[name] = String(None)
+                names[name] = {depth: String(None)}
             return None
 
     def initialization_assignment(data):
         _, var_type, name, expr = data
-        if name in names:
-            return "Variable already initialized"
+        val = calculate(expr, depth)
         if var_type == 'int':
             var_type = Integer(None)
         elif var_type == 'real':
@@ -732,15 +781,20 @@ def calculate(data):
             var_type = Bool(None)
         elif var_type == 'str':
             var_type = String(None)
-        val = calculate(expr)
+        if name in names:
+            if depth in names[name]:
+                return "Variable already initialized"
+            else:
+                names[name][depth] = val
+                return None
         if type(var_type) is not type(val):
             return "Incompatible types"
-        names[name] = val
+        names[name] = {depth: val}
         return None
 
     def int_to_real_conversion(data):
         _, expr = data
-        to_cast = calculate(expr)
+        to_cast = calculate(expr, depth)
         if isinstance(to_cast, Integer):
             return Real(float(to_cast.value))
         else:
@@ -748,7 +802,7 @@ def calculate(data):
 
     def real_to_int_conversion(data):
         _, expr = data
-        to_cast = calculate(expr)
+        to_cast = calculate(expr, depth)
         if isinstance(to_cast, Real):
             return Integer(int(to_cast.value))
         else:
@@ -808,10 +862,10 @@ def calculate(data):
         return real_to_int_conversion(data)
 
 
-def calculate_statements(statements):
+def calculate_statements(statements, depth):
     results = []
     for statement in statements:
-        results.append(calculate(statement))
+        results.append(calculate(statement, depth))
     return results
 
 
@@ -820,7 +874,7 @@ def calculator_output(data):
     lexer = build_lexer(data)
     parser = yacc.yacc()
     statements = parser.parse(data)
-    return calculate_statements(statements)
+    return calculate_statements(statements, 0)
 
 
 class Order:
@@ -1026,10 +1080,23 @@ from anytree.exporter import DotExporter
 # DotExporter(build_ast(statements)).to_picture("ast/example.png")
 if __name__ == '__main__':
     import yacc as yacc
-    data = 'int i; real j = 0.0;str hi = "hi"; hi;int a = realtoint(sin 0);a;' \
-           ' if(1>2){2-1}else{69}; a=1; while(a < 10){a = a+1}; a; for(i = 0;i<5;i = i+1){i}'
+    #data = 'int i; real j = 0.0;str hi = "hi"; hi;int a = realtoint(sin 0);a;' \
+           #' if(1>2){2-1}else{69}; a=1; while(a < 10){a = a+1}; a; for(i = 0;i<5;i = i+1){i}'
+    # data = '''int i = 0;
+    #           if (i == 0){
+    #                 int i = 1;
+    #                 if (i == 1){
+    #                     int i = 2;
+    #                     if (i == 2){
+    #                         i = 13;
+    #                         i;
+    #                     };
+    #                 };
+    #           };
+    #           i;'''
+    data = ''''''
     lexer = build_lexer(data)
     parser = yacc.yacc()
     statements = parser.parse(data)
     print(statements)
-    printer(calculate_statements(statements))
+    printer(calculate_statements(statements, 0))

@@ -4,6 +4,9 @@ from ex3.calc import Integer, Real, String, Bool
 
 
 class CalculatorTests(unittest.TestCase):
+    def tearDown(self):
+        calc.names.clear()
+
     def test_basic_operations(self):
         data = '4+4; 2-2; 1*10;2/5'
         self.assertEqual(calc.calculator_output(data), [Integer(8), Integer(0), Integer(10), Integer(0)])
