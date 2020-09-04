@@ -145,6 +145,7 @@ precedence = (
     ('left', 'PLUS', 'MINUS'),
     ('left', 'TIMES', 'DIVIDE'),
     ('left', 'SIN', 'COS', 'TAN', 'COT', 'SQRT', 'LOG', 'EXP', 'ASIN', 'ACOS', 'ATAN', 'ACOT'),
+    ('left', 'INTTOREAL', 'REALTOINT'),
     ('right', 'POWER'),
     ('right', 'NOT'),
     ('right', 'UMINUS')
@@ -1025,8 +1026,8 @@ from anytree.exporter import DotExporter
 # DotExporter(build_ast(statements)).to_picture("ast/example.png")
 if __name__ == '__main__':
     import yacc as yacc
-    data = 'int i; real j = 0.0;str hi = "hi"; hi;real a = sin 0;a;' \
-           ' if(1>2){2-1}else{69}; a=1.0; while(a < 10.0){a = a+1.0}; a; for(i = 0;i<5;i = i+1){i}'
+    data = 'int i; real j = 0.0;str hi = "hi"; hi;int a = realtoint(sin 0);a;' \
+           ' if(1>2){2-1}else{69}; a=1; while(a < 10){a = a+1}; a; for(i = 0;i<5;i = i+1){i}'
     lexer = build_lexer(data)
     parser = yacc.yacc()
     statements = parser.parse(data)
