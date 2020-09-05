@@ -103,3 +103,24 @@ class CalculatorTests(unittest.TestCase):
         result = []
         calc.parse_output(calc.calculator_output(data), result)
         self.assertEqual(result, [13])
+
+    def test_function_usage_in_function(self):
+        data = '''declare square(int i){
+                      i*i;
+                  };
+              declare square_sum(int a, int b){
+                    square(a) + square(b);
+              };
+              square_sum(3,4)'''
+        result = []
+        calc.parse_output(calc.calculator_output(data), result)
+        self.assertEqual(result, [25])
+
+    def test_type_conversion_in_function(self):
+        data = '''declare double(int value){
+                      value*2;
+                  };
+              double(2.124321)'''
+        result = []
+        calc.parse_output(calc.calculator_output(data), result)
+        self.assertEqual(result, [4])

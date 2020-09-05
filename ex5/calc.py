@@ -890,7 +890,12 @@ def calculate(data, depth):
             args.append(calculate(expr, depth))
         for i, a in enumerate(fun.signature):
             if type(a[1]) is not type(args[i]):
-                return "Invalid argument type"
+                if isinstance(a[1], Integer) and isinstance(args[i], Real):
+                    args[i] = Integer(int(args[i].value))
+                elif isinstance(a[1], Real) and isinstance(args[i], Integer):
+                    args[i] = Real(float(args[i].value))
+                else:
+                    return "Invalid argument type"
             if a[0] in names:
                 names[a[0]][depth+1] = args[i]
             else:
@@ -1212,7 +1217,13 @@ if __name__ == '__main__':
                         };
                     };
               };
-              f(6)'''
+              f(6);
+              int i = 1;
+              if (1==1){
+                int y = i+3;
+                y;
+              }
+              '''
     lexer = build_lexer(data)
     parser = yacc.yacc()
     statements = parser.parse(data)
