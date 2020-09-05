@@ -6,7 +6,8 @@ examples = [
     'xd = sin cos (1/2*4+3-5); xd',
     'a = sin (-143 + 12 ^ 2); a; a + 1; 1<2+1; if(1<2){2-1}',
     'a = sin 0;a; if(1>2){2-1}else{69}; a=1; while(a < 10){a = a+1}; a; for(i = 0;i<5;i = i+1){i}',
-    'int a = 1; a = 2; str i = "hello"; i'
+    'int a = 1; a = 2; str i = "hello"; i',
+    'declare f(){1}; f()'
 ]
 
 

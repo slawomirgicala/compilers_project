@@ -583,6 +583,8 @@ def calculate(data, depth):
         _, left, right = data
         left = calculate(left, depth)
         right = calculate(right, depth)
+        if ('+', left.value, right.value) in cache:
+            return cache[('+', left.value, right.value)]
         if type(left) is type(right):
             if isinstance(left, Bool):
                 return "Cannot add bool"
@@ -591,7 +593,9 @@ def calculate(data, depth):
                     return right
                 if right.value == 0:
                     return left
-                return left + right
+                res = left + right
+                cache[('+', left.value, right.value)] = res
+                return res
         else:
             return "Incompatible types"
 
@@ -599,6 +603,8 @@ def calculate(data, depth):
         _, left, right = data
         left = calculate(left, depth)
         right = calculate(right, depth)
+        if ('-', left.value, right.value) in cache:
+            return cache[('-', left.value, right.value)]
         if type(left) is type(right):
             if isinstance(left, Bool) or isinstance(left, String):
                 return "Cannot subtract bool and string"
@@ -607,7 +613,9 @@ def calculate(data, depth):
                     return right
                 if right.value == 0:
                     return left
-                return left - right
+                res = left - right
+                cache[('-', left.value, right.value)] = res
+                return res
         else:
             return "Incompatible types"
 
@@ -615,6 +623,8 @@ def calculate(data, depth):
         _, left, right = data
         left = calculate(left, depth)
         right = calculate(right, depth)
+        if ('*', left.value, right.value) in cache:
+            return cache[('*', left.value, right.value)]
         if type(left) is type(right):
             if isinstance(left, Bool) or isinstance(left, String):
                 return "Cannot multiply bool and string"
@@ -623,7 +633,9 @@ def calculate(data, depth):
                     return right
                 if right.value == 1:
                     return left
-                return left * right
+                res = left * right
+                cache[('*', left.value, right.value)] = res
+                return res
         else:
             return "Incompatible types"
 
@@ -631,6 +643,8 @@ def calculate(data, depth):
         _, left, right = data
         left = calculate(left, depth)
         right = calculate(right, depth)
+        if ('/', left.value, right.value) in cache:
+            return cache[('/', left.value, right.value)]
         if type(left) is type(right):
             if isinstance(left, Bool) or isinstance(left, String):
                 return "Cannot divide bool and string"
@@ -639,7 +653,9 @@ def calculate(data, depth):
                     return right
                 if right.value == 1:
                     return left
-                return left / right
+                res = left / right
+                cache[('/', left.value, right.value)] = res
+                return res
         else:
             return "Incompatible types"
 
@@ -647,6 +663,8 @@ def calculate(data, depth):
         _, left, right = data
         left = calculate(left, depth)
         right = calculate(right, depth)
+        if ('**', left.value, right.value) in cache:
+            return cache[('**', left.value, right.value)]
         if type(left) is type(right):
             if isinstance(left, Bool) or isinstance(left, String):
                 return "Cannot power bool and string"
@@ -655,7 +673,9 @@ def calculate(data, depth):
                     return right*right
                 if right.value == 2:
                     return left*left
-                return left ** right
+                res = left ** right
+                cache[('**', left.value, right.value)] = res
+                return res
         else:
             return "Incompatible types"
 
@@ -663,8 +683,12 @@ def calculate(data, depth):
         _, left, right = data
         left = calculate(left, depth)
         right = calculate(right, depth)
+        if ('==', left.value, right.value) in cache:
+            return cache[('==', left.value, right.value)]
         if type(left) is type(right):
-            return left == right
+            res = left == right
+            cache[('==', left.value, right.value)] = res
+            return res
         else:
             return "Incompatible types"
 
@@ -1131,6 +1155,18 @@ def create_node(data, parent):
         create_node(expr, real_to_int_node)
         return real_to_int_node
 
+    def create_fun_declaration_node(data, parent):
+        symbol, name, _, _ = data
+        fun_declaration_node = Node(Order.next() + symbol, parent)
+        Node(Order.next() + 'FUNCTION NAME\n' + name, fun_declaration_node)
+        return fun_declaration_node
+
+    def create_fun_call_node(data, parent):
+        symbol, name, _ = data
+        fun_call_node = Node(Order.next() + symbol, parent)
+        Node(Order.next() + 'FUNCTION NAME\n' + name, fun_call_node)
+        return fun_call_node
+
     if data[0] in ('INTEGER', 'REAL', 'BOOL', 'STRING'):
         return create_primitive_node(data, parent)
     elif data[0] in list(math_reserved.keys()):
@@ -1161,6 +1197,10 @@ def create_node(data, parent):
         return create_int_to_real_node(data, parent)
     elif data[0] == 'REALTOINT':
         return create_real_to_int_node(data, parent)
+    elif data[0] == 'FUN_DECL':
+        return create_fun_declaration_node(data, parent)
+    elif data[0] == 'FUN_CALL':
+        return create_fun_call_node(data, parent)
 
 
 def build_ast(data):
@@ -1227,27 +1267,39 @@ if __name__ == '__main__':
     #           };
     #           i;'''
     #data = '''declare f(int a, real b, bool c, str d){a}; f(a, b, c, d)'''
-    data = '''declare f(int i){
-                    if (i == 0){
-                        1;
-                    } else{
-                        if (i == 1){
-                            1;
-                        }else{
-                            f(i-1) + f(i-2);
-                        };
-                    };
-              };
-              f(6);
-              int i = 1;
-              if (1==1){
-                int y = i+3;
-                y;
-              }
-              '''
-    lexer = build_lexer(data)
-    parser = yacc.yacc()
-    statements = parser.parse(data)
-    print(data)
-    print(statements)
-    printer(calculate_statements(statements, 0))
+    # data = '''declare f(int i){
+    #                 if (i == 0){
+    #                     1;
+    #                 } else{
+    #                     if (i == 1){
+    #                         1;
+    #                     }else{
+    #                         f(i-1) + f(i-2);
+    #                     };
+    #                 };
+    #           };
+    #           f(6);
+    #           int i = 1;
+    #           if (1==1){
+    #             int y = i+3;
+    #             y;
+    #           }
+    #           '''
+    # lexer = build_lexer(data)
+    # parser = yacc.yacc()
+    # statements = parser.parse(data)
+    # print(data)
+    # print(statements)
+    # printer(calculate_statements(statements, 0))
+
+    while True:
+        try:
+            s = input('calc > ')
+        except EOFError:
+            break
+        if not s:
+            continue
+        lexer = build_lexer(s)
+        parser = yacc.yacc()
+        statements = parser.parse(s)
+        printer(calculate_statements(statements, 0))
