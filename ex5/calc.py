@@ -143,6 +143,7 @@ def tokenize(lexer):
 
 names = {}
 functions = {}
+cache = {}
 
 precedence = (
     ('nonassoc', 'GT', 'GTE', 'LT', 'LTE', 'EQUALS', 'NOTEQUALS'),
@@ -586,6 +587,10 @@ def calculate(data, depth):
             if isinstance(left, Bool):
                 return "Cannot add bool"
             else:
+                if left.value == 0:
+                    return right
+                if right.value == 0:
+                    return left
                 return left + right
         else:
             return "Incompatible types"
@@ -598,6 +603,10 @@ def calculate(data, depth):
             if isinstance(left, Bool) or isinstance(left, String):
                 return "Cannot subtract bool and string"
             else:
+                if left.value == 0:
+                    return right
+                if right.value == 0:
+                    return left
                 return left - right
         else:
             return "Incompatible types"
@@ -610,6 +619,10 @@ def calculate(data, depth):
             if isinstance(left, Bool) or isinstance(left, String):
                 return "Cannot multiply bool and string"
             else:
+                if left.value == 1:
+                    return right
+                if right.value == 1:
+                    return left
                 return left * right
         else:
             return "Incompatible types"
@@ -622,6 +635,10 @@ def calculate(data, depth):
             if isinstance(left, Bool) or isinstance(left, String):
                 return "Cannot divide bool and string"
             else:
+                if left.value == 1:
+                    return right
+                if right.value == 1:
+                    return left
                 return left / right
         else:
             return "Incompatible types"
@@ -634,6 +651,10 @@ def calculate(data, depth):
             if isinstance(left, Bool) or isinstance(left, String):
                 return "Cannot power bool and string"
             else:
+                if left.value == 2:
+                    return right*right
+                if right.value == 2:
+                    return left*left
                 return left ** right
         else:
             return "Incompatible types"
