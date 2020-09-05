@@ -6,6 +6,7 @@ from ex4.calc import Integer, Real, String, Bool
 class CalculatorTests(unittest.TestCase):
     def tearDown(self):
         calc.names.clear()
+        calc.functions.clear()
 
     def test_basic_operations(self):
         data = '4+4; 2-2; 1*10;2/5'
@@ -85,3 +86,20 @@ class CalculatorTests(unittest.TestCase):
                                                          [None, [[None, [None]], [None, [None]]]],
                                                          [None, [[None, [None]], [None, [None]]]]],
                                                         Integer(7)])
+
+    def test_function_recursion(self):
+        data = '''declare f(int i){
+                    if (i == 0){
+                        1;
+                    } else{
+                        if (i == 1){
+                            1;
+                        }else{
+                            f(i-1) + f(i-2);
+                        };
+                    };
+              };
+              f(6)'''
+        result = []
+        calc.parse_output(calc.calculator_output(data), result)
+        self.assertEqual(result, [13])

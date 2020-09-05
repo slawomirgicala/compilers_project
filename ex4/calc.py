@@ -31,7 +31,8 @@ reserved = {
     'bool': 'BOOL_INIT',
     'str': 'STR_INIT',
     'inttoreal': 'INTTOREAL',
-    'realtoint': 'REALTOINT'
+    'realtoint': 'REALTOINT',
+    'declare': 'DECLARATION'
 }
 
 tokens = [
@@ -57,7 +58,8 @@ tokens = [
     'SEMICOLON',
     'LBRACKET',
     'RBRACKET',
-    'STRING'
+    'STRING',
+    'COMMA'
 ] + list(reserved.values())
 
 t_PLUS = r'\+'
@@ -78,6 +80,7 @@ t_NOT = r'\!'
 t_SEMICOLON = r'\;'
 t_LBRACKET = r'\{'
 t_RBRACKET = r'\}'
+t_COMMA = r'\,'
 
 
 def t_BOOL(t):
@@ -139,6 +142,7 @@ def tokenize(lexer):
 # PARSING
 
 names = {}
+functions = {}
 
 precedence = (
     ('nonassoc', 'GT', 'GTE', 'LT', 'LTE', 'EQUALS', 'NOTEQUALS'),
@@ -312,6 +316,41 @@ def p_for_statement(p):
     p[0] = [('FOR', p[3], p[5], p[7], p[10])]
 
 
+def p_empty(p):
+    'empty :'
+    pass
+
+
+def p_signature(p):
+    '''signature : signature COMMA initialization
+                 | initialization
+                 | empty'''
+    if len(p) > 2:
+        p[0] = p[1] + p[3]
+    else:
+        p[0] = p[1]
+
+
+def p_arguments(p):
+    '''arguments : arguments COMMA expression
+                 | expression
+                 | empty'''
+    if len(p) > 2:
+        p[0] = p[1] + [p[3]]
+    else:
+        p[0] = [p[1]]
+
+
+def p_function_declaration(p):
+    '''statement : DECLARATION ID LPAREN signature RPAREN LBRACKET statement RBRACKET'''
+    p[0] = [('FUN_DECL', p[2], p[4], p[7])]
+
+
+def p_function_call(p):
+    '''expression : ID LPAREN arguments RPAREN'''
+    p[0] = ('FUN_CALL', p[1], p[3])
+
+
 def p_error(p):
     if p:
         print("Syntax error at '%s'" % p.value)
@@ -445,6 +484,30 @@ class String:
 
     def __str__(self):
         return str(self.value)
+
+
+def str_to_class(name):
+    if name == 'int':
+        return Integer(None)
+    elif name == 'real':
+        return Real(None)
+    elif name == 'bool':
+        return Bool(None)
+    elif name == 'str':
+        return String(None)
+
+
+class Fun:
+    def __init__(self, name, signature, instructions):
+        self.name = name
+        if signature is None:
+            self.signature = []
+        else:
+            signature_list = []
+            for s in signature:
+                signature_list.append((s[1], str_to_class(s[0])))
+            self.signature = signature_list
+        self.instructions = instructions
 
 
 # calculations utilities
@@ -808,6 +871,37 @@ def calculate(data, depth):
         else:
             return "Only real can be cast to int by realtoint"
 
+    def function_declaration(data):
+        _, name, signature, instructions = data
+        functions[name] = Fun(name, signature, instructions)
+        return None
+
+    def function_call(data):
+        _, name, arguments = data
+        if arguments[0] is None:
+            del arguments[0]
+        if name not in functions:
+            return "Function not declared"
+        fun = functions[name]
+        if len(fun.signature) != len(arguments):
+            return "Wrong number of arguments"
+        args = []
+        for expr in arguments:
+            args.append(calculate(expr, depth))
+        for i, a in enumerate(fun.signature):
+            if type(a[1]) is not type(args[i]):
+                return "Invalid argument type"
+            if a[0] in names:
+                names[a[0]][depth+1] = args[i]
+            else:
+                names[a[0]] = {(depth+1): args[i]}
+        res = calculate_statements(fun.instructions, depth+1)
+        for a in fun.signature:
+            del names[a[0]][depth+1]
+        while isinstance(res[len(res)-1], list):
+            res = res[len(res)-1]
+        return res[len(res)-1]
+
     if data[0] in ('INTEGER', 'REAL', 'BOOL', 'STRING'):
         return get_value(data)
     elif data[0] in list(math_reserved.keys()):
@@ -860,6 +954,10 @@ def calculate(data, depth):
         return int_to_real_conversion(data)
     elif data[0] == 'REALTOINT':
         return real_to_int_conversion(data)
+    elif data[0] == 'FUN_DECL':
+        return function_declaration(data)
+    elif data[0] == 'FUN_CALL':
+        return function_call(data)
 
 
 def calculate_statements(statements, depth):
@@ -1074,6 +1172,14 @@ def printer(data):
                 print(d)
 
 
+def parse_output(data, container):
+    for d in data:
+        if isinstance(d, list):
+            parse_output(d, container)
+        else:
+            if d is not None:
+                container.append(d.value)
+
 
 from anytree.exporter import DotExporter
 
@@ -1094,9 +1200,22 @@ if __name__ == '__main__':
     #                 };
     #           };
     #           i;'''
-    data = ''''''
+    #data = '''declare f(int a, real b, bool c, str d){a}; f(a, b, c, d)'''
+    data = '''declare f(int i){
+                    if (i == 0){
+                        1;
+                    } else{
+                        if (i == 1){
+                            1;
+                        }else{
+                            f(i-1) + f(i-2);
+                        };
+                    };
+              };
+              f(6)'''
     lexer = build_lexer(data)
     parser = yacc.yacc()
     statements = parser.parse(data)
+    print(data)
     print(statements)
     printer(calculate_statements(statements, 0))

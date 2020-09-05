@@ -185,3 +185,12 @@ class TokenTests(unittest.TestCase):
         lexer = calc.build_lexer(data)
         tokens = calc.tokenize(lexer)
         self.assertEqual(tokens, [('STRING', "1"), ('INTEGER', 1)])
+
+    def test_function_declaration_1(self):
+        data = 'declare f(int a, int b, int c, real z){a}'
+        lexer = calc.build_lexer(data)
+        tokens = calc.tokenize(lexer)
+        self.assertEqual(tokens, [('DECLARATION', 'declare'), ('ID', 'f'), ('LPAREN', '('), ('INT_INIT', 'int'),
+                                  ('ID', 'a'), ('COMMA', ','), ('INT_INIT', 'int'), ('ID', 'b'), ('COMMA', ','),
+                                  ('INT_INIT', 'int'), ('ID', 'c'), ('COMMA', ','), ('REAL_INIT', 'real'), ('ID', 'z'),
+                                  ('RPAREN', ')'), ('LBRACKET', '{'), ('ID', 'a'), ('RBRACKET', '}')])
