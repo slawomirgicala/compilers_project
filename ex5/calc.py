@@ -1247,51 +1247,67 @@ def parse_output(data, container):
                 container.append(d.value)
 
 
-from anytree.exporter import DotExporter
-
-# DotExporter(build_ast(statements)).to_picture("ast/example.png")
-if __name__ == '__main__':
+def get_parsed_statements(data):
     import yacc as yacc
-    #data = 'int i; real j = 0.0;str hi = "hi"; hi;int a = realtoint(sin 0);a;' \
-           #' if(1>2){2-1}else{69}; a=1; while(a < 10){a = a+1}; a; for(i = 0;i<5;i = i+1){i}'
-    # data = '''int i = 0;
-    #           if (i == 0){
-    #                 int i = 1;
-    #                 if (i == 1){
-    #                     int i = 2;
-    #                     if (i == 2){
-    #                         i = 13;
-    #                         i;
-    #                     };
-    #                 };
-    #           };
-    #           i;'''
-    #data = '''declare f(int a, real b, bool c, str d){a}; f(a, b, c, d)'''
-    # data = '''declare f(int i){
-    #                 if (i == 0){
-    #                     1;
-    #                 } else{
-    #                     if (i == 1){
-    #                         1;
-    #                     }else{
-    #                         f(i-1) + f(i-2);
-    #                     };
-    #                 };
-    #           };
-    #           f(6);
-    #           int i = 1;
-    #           if (1==1){
-    #             int y = i+3;
-    #             y;
-    #           }
-    #           '''
-    # lexer = build_lexer(data)
-    # parser = yacc.yacc()
-    # statements = parser.parse(data)
-    # print(data)
-    # print(statements)
-    # printer(calculate_statements(statements, 0))
+    lexer = build_lexer(data)
+    parser = yacc.yacc()
+    return parser.parse(data)
 
+
+def use_calculator(data):
+    import yacc as yacc
+    lexer = build_lexer(data)
+    parser = yacc.yacc()
+    statements = parser.parse(data)
+    printer(calculate_statements(statements, 0))
+
+
+# if __name__ == '__main__':
+#     import yacc as yacc
+#     #data = 'int i; real j = 0.0;str hi = "hi"; hi;int a = realtoint(sin 0);a;' \
+#            #' if(1>2){2-1}else{69}; a=1; while(a < 10){a = a+1}; a; for(i = 0;i<5;i = i+1){i}'
+#     # data = '''int i = 0;
+#     #           if (i == 0){
+#     #                 int i = 1;
+#     #                 if (i == 1){
+#     #                     int i = 2;
+#     #                     if (i == 2){
+#     #                         i = 13;
+#     #                         i;
+#     #                     };
+#     #                 };
+#     #           };
+#     #           i;'''
+#     #data = '''declare f(int a, real b, bool c, str d){a}; f(a, b, c, d)'''
+#     data = '''declare f(int i){
+#                     if (i == 0){
+#                         1;
+#                     } else{
+#                         if (i == 1){
+#                             1;
+#                         }else{
+#                             f(i-1) + f(i-2);
+#                         };
+#                     };
+#               };
+#               f(6);
+#               int i = 1;
+#               if (1==1){
+#                 int y = i+3;
+#                 y;
+#               }
+#               '''
+#     lexer = build_lexer(data)
+#     parser = yacc.yacc()
+#     statements = parser.parse(data)
+#     print("---------------------------INPUT-----------------------")
+#     print(data)
+#     #print(statements)
+#     print("---------------------------OUTPUT----------------------")
+#     printer(calculate_statements(statements, 0))
+
+
+if __name__ == '__main__':
     while True:
         try:
             s = input('calc > ')
@@ -1299,7 +1315,4 @@ if __name__ == '__main__':
             break
         if not s:
             continue
-        lexer = build_lexer(s)
-        parser = yacc.yacc()
-        statements = parser.parse(s)
-        printer(calculate_statements(statements, 0))
+        use_calculator(s)
