@@ -1264,8 +1264,25 @@ def use_calculator(data):
 
 # if __name__ == '__main__':
 #     import yacc as yacc
-#     #data = 'int i; real j = 0.0;str hi = "hi"; hi;int a = realtoint(sin 0);a;' \
-#            #' if(1>2){2-1}else{69}; a=1; while(a < 10){a = a+1}; a; for(i = 0;i<5;i = i+1){i}'
+#     # data = '''int i;
+#     #           real j = 0.0;
+#     #           str hi = "hi";
+#     #           hi;
+#     #           int a = realtoint(sin 0);
+#     #           a;
+#     #           if(1>2){
+#     #             2-1
+#     #           }else{
+#     #             69
+#     #           };
+#     #           a=1;
+#     #           while(a < 10){
+#     #             a = a+1
+#     #           };
+#     #           a;
+#     #           for(i = 0;i<5;i = i+1){
+#     #             i
+#     #           }'''
 #     # data = '''int i = 0;
 #     #           if (i == 0){
 #     #                 int i = 1;
@@ -1278,7 +1295,8 @@ def use_calculator(data):
 #     #                 };
 #     #           };
 #     #           i;'''
-#     #data = '''declare f(int a, real b, bool c, str d){a}; f(a, b, c, d)'''
+#     # data = '''declare f(int a, real b, bool c, str d){a};
+#     # f(123, 321, True, "hello")'''
 #     data = '''declare f(int i){
 #                     if (i == 0){
 #                         1;
